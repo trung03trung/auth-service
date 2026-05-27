@@ -1,0 +1,24 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI}
+
+keycloak:
+  server-url: ${KEYCLOAK_SERVER_URL}
+  realm: ${KEYCLOAK_REALM}
+  client-id: ${KEYCLOAK_CLIENT_ID}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET}
+  admin-username: ${KEYCLOAK_ADMIN}
+  admin-password: ${KEYCLOAK_ADMIN_PASSWORD}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}
+
+logging:
+  level:
+    com.skyviet: WARN
