@@ -1,0 +1,11 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg=GITHUB_USER=${_GITHUB_USER}'
+      - '--build-arg=GITHUB_TOKEN=${_GITHUB_TOKEN}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/auth-service:latest'
+      - '.'
+images:
+  - 'gcr.io/$PROJECT_ID/auth-service:latest'
