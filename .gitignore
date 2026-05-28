@@ -20,3 +20,5 @@ Thumbs.db
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
+
+gcp-key.json
