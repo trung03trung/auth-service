@@ -1,4 +1,7 @@
 spring:
+  cloud:
+    discovery:
+      enabled: false
   security:
     oauth2:
       resourceserver:
@@ -16,8 +19,7 @@ keycloak:
 
 eureka:
   client:
-    service-url:
-      defaultZone: ${EUREKA_URL}
+    enabled: false
 
 logging:
   level:
