@@ -11,13 +11,10 @@ keycloak:
   realm: ${KEYCLOAK_REALM:airline}
   client-id: ${KEYCLOAK_CLIENT_ID:vinhphucairline-app}
   client-secret: ${KEYCLOAK_CLIENT_SECRET:CF1HFGgKedqgmwEVgv1gACiQMyHlRH4y}
-  admin-username: ${KEYCLOAK_ADMIN:admin}
-  admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
 
 eureka:
   client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
+    enabled: false
 
 logging:
   level:

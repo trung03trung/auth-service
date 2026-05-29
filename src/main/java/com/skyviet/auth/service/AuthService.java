@@ -30,11 +30,7 @@ public class AuthService {
     @Value("${keycloak.client-secret}")
     private String clientSecret;
 
-    @Value("${keycloak.admin-username}")
-    private String adminUsername;
 
-    @Value("${keycloak.admin-password}")
-    private String adminPassword;
 
     public AuthResponse login(LoginRequest request) {
         try {
@@ -60,30 +56,42 @@ public class AuthService {
     }
 
     public AuthResponse refresh(RefreshRequest request) {
-        Map<String, Object> response = keycloakWebClient.post()
-                .uri("/realms/{realm}/protocol/openid-connect/token", realm)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("grant_type", "refresh_token")
-                        .with("client_id", clientId)
-                        .with("client_secret", clientSecret)
-                        .with("refresh_token", request.refreshToken()))
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+        try {
+            Map<String, Object> response = keycloakWebClient.post()
+                    .uri("/realms/{realm}/protocol/openid-connect/token", realm)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters.fromFormData("grant_type", "refresh_token")
+                            .with("client_id", clientId)
+                            .with("client_secret", clientSecret)
+                            .with("refresh_token", request.refreshToken()))
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
 
-        return toAuthResponse(response);
+            log.info("Keycloak refresh response: {}", response);
+            return toAuthResponse(response);
+        } catch (WebClientResponseException ex) {
+            log.error("Keycloak refresh error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new KeycloakException(ex.getStatusCode().value(), ex.getResponseBodyAsString());
+        }
     }
 
     public void logout(String refreshToken) {
-        keycloakWebClient.post()
-                .uri("/realms/{realm}/protocol/openid-connect/logout", realm)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("client_id", clientId)
-                        .with("client_secret", clientSecret)
-                        .with("refresh_token", refreshToken))
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        try {
+            keycloakWebClient.post()
+                    .uri("/realms/{realm}/protocol/openid-connect/logout", realm)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters.fromFormData("client_id", clientId)
+                            .with("client_secret", clientSecret)
+                            .with("refresh_token", refreshToken))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+            log.info("Keycloak logout successful");
+        } catch (WebClientResponseException ex) {
+            log.error("Keycloak logout error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new KeycloakException(ex.getStatusCode().value(), ex.getResponseBodyAsString());
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -92,7 +100,7 @@ public class AuthService {
 
         Map<String, Object> userPayload = Map.of(
                 "email", request.email(),
-                "username", request.email(),
+                "username", request.username(),
                 "firstName", request.firstName(),
                 "lastName", request.lastName(),
                 "enabled", true,
@@ -113,25 +121,32 @@ public class AuthService {
                     .retrieve()
                     .toBodilessEntity()
                     .block();
-        } catch (WebClientResponseException.Conflict e) {
-            throw new IllegalArgumentException("Email already registered");
+            log.info("Keycloak register successful for user: {}", request.username());
+        } catch (WebClientResponseException ex) {
+            log.error("Keycloak register error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new KeycloakException(ex.getStatusCode().value(), ex.getResponseBodyAsString());
         }
     }
 
     @SuppressWarnings("unchecked")
     private String getAdminToken() {
-        Map<String, Object> response = keycloakWebClient.post()
-                .uri("/realms/master/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("grant_type", "password")
-                        .with("client_id", "admin-cli")
-                        .with("username", adminUsername)
-                        .with("password", adminPassword))
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+        try {
+            Map<String, Object> response = keycloakWebClient.post()
+                    .uri("/realms/{realm}/protocol/openid-connect/token", realm)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters.fromFormData("grant_type", "client_credentials")
+                            .with("client_id", clientId)
+                            .with("client_secret", clientSecret))
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
 
-        return (String) response.get("access_token");
+            log.info("Keycloak getAdminToken response: {}", response);
+            return (String) response.get("access_token");
+        } catch (WebClientResponseException ex) {
+            log.error("Keycloak getAdminToken error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new KeycloakException(ex.getStatusCode().value(), ex.getResponseBodyAsString());
+        }
     }
 
     @SuppressWarnings("unchecked")
